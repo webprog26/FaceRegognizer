@@ -4,4 +4,5 @@
     <string name="action_save_selected">Save selected</string>
     <string name="warning">Warning!</string>
     <string name="no_photos_selected">You have no photos selected so the will be deleted! Proceed with closing?</string>
+    <string name="person_description_tag">Type description tag</string>
 </resources>

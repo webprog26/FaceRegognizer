@@ -15,9 +15,7 @@ import android.view.WindowManager;
 import com.dark.webprog26.opencvdemo_1.events.FacesDetectedEvent;
 import com.dark.webprog26.opencvdemo_1.events.PhotosSavedToTemporaryDirEvent;
 import com.dark.webprog26.opencvdemo_1.managers.BitmapManager;
-import com.github.wihoho.Trainer;
-import com.github.wihoho.constant.FeatureType;
-import com.github.wihoho.training.CosineDissimilarity;
+
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;

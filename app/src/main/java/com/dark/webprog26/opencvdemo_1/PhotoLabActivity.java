@@ -6,11 +6,13 @@ import android.os.Environment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.GridView;
 import com.dark.webprog26.opencvdemo_1.adapters.LabGridViewAdapter;
 import com.dark.webprog26.opencvdemo_1.events.DeleteUnselectedPhotosEvent;
@@ -25,6 +27,7 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static com.dark.webprog26.opencvdemo_1.managers.BitmapManager.SAVED_IMAGES_TEMP_DIR;
@@ -34,6 +37,8 @@ public class PhotoLabActivity extends AppCompatActivity {
     private static final String TAG = "PhotoLabActivity_TAG";
     private GridView mGridView;
     private List<Bitmap> mCorrectFaces = new ArrayList<>();
+    private FaceModel.Builder mBuilder = FaceModel.newBuilder();
+    private HashMap<Bitmap, FaceModel> mBitmapFaceModelHashMap = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,13 +109,40 @@ public class PhotoLabActivity extends AppCompatActivity {
 
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            Bitmap faceBitmap = facesList.get(position);
+            final Bitmap faceBitmap = facesList.get(position);
             if(!isFaceChecked(faceBitmap)){
                 ((FaceView) view).drawMarker(faceBitmap, false);
                 mCorrectFaces.add(faceBitmap);
+                final View dialogView = getLayoutInflater().inflate(R.layout.face_data_layout, null);
+                AlertDialog.Builder builder = new AlertDialog.Builder(PhotoLabActivity.this)
+                        .setTitle(getResources().getString(R.string.person_description_tag))
+                        .setView(dialogView)
+                        .setCancelable(false)
+                        .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                EditText etDescription = (EditText) dialogView.findViewById(R.id.etDescription);
+                                mBuilder.setDescription(etDescription.getText().toString());
+                                Log.i(TAG, etDescription.getText().toString());
+                                FaceModel faceModel = mBuilder.build();
+                                if(faceModel.getDescription() != null){
+                                    Log.i(TAG, "faceModel.getDescription() " + faceModel.getDescription());
+                                    mBitmapFaceModelHashMap.put(faceBitmap, faceModel);
+                                }
+                                Log.i(TAG, "map: " + mBitmapFaceModelHashMap.toString() + ", size: " + mBitmapFaceModelHashMap.size());
+                                dialog.dismiss();
+                            }
+                        }).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        });
+                builder.show();
             } else {
                 ((FaceView) view).drawMarker(faceBitmap, true);
                 mCorrectFaces.remove(faceBitmap);
+                mBitmapFaceModelHashMap.remove(faceBitmap);
             }
         }
     }
@@ -145,9 +177,12 @@ public class PhotoLabActivity extends AppCompatActivity {
             return;
         }
 
-        for(Bitmap selectedBitmap: bitmaps){
-            BitmapManager.savePhotoToGallery(getContentResolver(), getResources().getString(R.string.app_name), selectedBitmap);
+        if(mBitmapFaceModelHashMap.size() > 0){
+            BitmapManager.savePhotoToGallery(getContentResolver(), getResources().getString(R.string.app_name), mBitmapFaceModelHashMap);
         }
+//        for(Bitmap selectedBitmap: bitmaps){
+//            BitmapManager.savePhotoToGallery(getContentResolver(), getResources().getString(R.string.app_name), selectedBitmap);
+//        }
         EventBus.getDefault().post(new DeleteUnselectedPhotosEvent());
     }
 
