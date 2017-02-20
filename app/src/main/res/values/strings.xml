@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">OpenCvDemo_1</string>
+    <string name="action_start_detecting">Start detecting</string>
+    <string name="action_save_selected">Save selected</string>
+    <string name="warning">Warning!</string>
+    <string name="no_photos_selected">You have no photos selected so the will be deleted! Proceed with closing?</string>
 </resources>
