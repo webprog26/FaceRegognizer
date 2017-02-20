@@ -28,4 +28,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile project(':openCVLibrary320')
     compile 'org.greenrobot:eventbus:3.0.0'
+    compile 'com.github.wihoho:face-recognition:1.0'
 }
