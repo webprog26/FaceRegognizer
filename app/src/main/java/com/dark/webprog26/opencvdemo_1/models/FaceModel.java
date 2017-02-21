@@ -1,4 +1,4 @@
-package com.dark.webprog26.opencvdemo_1;
+package com.dark.webprog26.opencvdemo_1.models;
 
 /**
  * Created by webpr on 20.02.2017.
@@ -26,7 +26,7 @@ public class FaceModel {
         return new FaceModel(). new Builder();
     }
 
-    class Builder{
+    public class Builder{
 
         public Builder setId(long id){
             FaceModel.this.mId = id;

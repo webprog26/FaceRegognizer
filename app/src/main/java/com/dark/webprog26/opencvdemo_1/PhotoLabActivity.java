@@ -20,6 +20,8 @@ import com.dark.webprog26.opencvdemo_1.events.SelectedPhotosSaveEvent;
 import com.dark.webprog26.opencvdemo_1.events.TemporaryBitmapsLoadedEvent;
 import com.dark.webprog26.opencvdemo_1.events.TemporaryBitmapsRequestEvent;
 import com.dark.webprog26.opencvdemo_1.managers.BitmapManager;
+import com.dark.webprog26.opencvdemo_1.models.FaceModel;
+import com.dark.webprog26.opencvdemo_1.providers.DbProvider;
 import com.dark.webprog26.opencvdemo_1.views.FaceView;
 
 import org.greenrobot.eventbus.EventBus;
@@ -39,13 +41,14 @@ public class PhotoLabActivity extends AppCompatActivity {
     private List<Bitmap> mCorrectFaces = new ArrayList<>();
     private FaceModel.Builder mBuilder = FaceModel.newBuilder();
     private HashMap<Bitmap, FaceModel> mBitmapFaceModelHashMap = new HashMap<>();
+    private DbProvider mDbProvider;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo_lab);
         mGridView = (GridView) findViewById(R.id.gridView);
-
+        mDbProvider = new DbProvider(this);
     }
 
     @Override
