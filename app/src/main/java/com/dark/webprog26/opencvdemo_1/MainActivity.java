@@ -11,10 +11,18 @@ import android.view.SurfaceView;
 
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Toast;
 
+import com.dark.webprog26.opencvdemo_1.ar.Filter;
+import com.dark.webprog26.opencvdemo_1.ar.ImageDetectionFilter;
+import com.dark.webprog26.opencvdemo_1.events.FaceModelsLoadedEvent;
+import com.dark.webprog26.opencvdemo_1.events.FaceRecognizedEvent;
 import com.dark.webprog26.opencvdemo_1.events.FacesDetectedEvent;
+import com.dark.webprog26.opencvdemo_1.events.LoadFaceModelsEvent;
 import com.dark.webprog26.opencvdemo_1.events.PhotosSavedToTemporaryDirEvent;
 import com.dark.webprog26.opencvdemo_1.managers.BitmapManager;
+import com.dark.webprog26.opencvdemo_1.models.FaceModel;
+import com.dark.webprog26.opencvdemo_1.providers.DbProvider;
 
 
 import org.greenrobot.eventbus.EventBus;
@@ -34,6 +42,7 @@ import org.opencv.objdetect.CascadeClassifier;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +57,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     private Mat grayscaleImage;
     private int absoluteFaceSize;
     private boolean mIsDetecting;
+    private boolean isFilterLoaded = false;
+    private boolean mIsRecognizing;
+
+
+    private List<Filter> mFilters = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +93,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     @Override
     public Mat onCameraFrame(Mat inputFrame) {
         if(mIsDetecting){
+            if(mIsRecognizing){
+                mIsRecognizing = false;
+            }
             List<Mat> mats = new ArrayList<>();
             mIsDetecting = false;
 
@@ -89,7 +106,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 cascadeClassifier.detectMultiScale(grayscaleImage, faces, 1.1, 2, 2, new Size(absoluteFaceSize, absoluteFaceSize), new Size());
             }
 
-            // If there are any faces found, draw a rectangle around it
+            // If there are any faces found, onDetected a rectangle around it
             int counter = 0;
             Rect[] facesArray = faces.toArray();
             Rect rectCrop = null;
@@ -109,6 +126,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             }
         }
 
+        if(mIsRecognizing){
+            if(mIsDetecting){
+                mIsDetecting = false;
+            }
+            mIsRecognizing = false;
+            for(Filter filter: mFilters){
+                filter.apply(inputFrame, inputFrame);
+            }
+        }
         return inputFrame;
     }
 
@@ -138,7 +164,29 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         OpenCVLoader.initDebug();
         if(initializeOpenCVDependencies()){
             mCameraView.enableView();
+            EventBus.getDefault().post(new LoadFaceModelsEvent());
         }
+    }
+
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    public void onLoadFaceModelsEvent(LoadFaceModelsEvent loadFaceModelsEvent){
+        EventBus.getDefault().post(new FaceModelsLoadedEvent(new DbProvider(this).getFaceModels()));
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onFaceModelsLoadedEvent(FaceModelsLoadedEvent faceModelsLoadedEvent){
+        Log.i(TAG, "Loaded in background " + faceModelsLoadedEvent.getFaceModels().size() + " face models");
+        for(FaceModel faceModel: faceModelsLoadedEvent.getFaceModels()){
+            Log.i(TAG, "description: " + faceModel.getDescription()
+                    + ", imageAddr: " + faceModel.getImageAddr());
+            try{
+                mFilters.add(new ImageDetectionFilter(faceModel.getImageAddr(),
+                        BitmapManager.getBitmap(faceModel.getImageAddr()), faceModel.getDescription()));
+            } catch (IOException ioe){
+                ioe.printStackTrace();
+            }
+        }
+        isFilterLoaded = true;
     }
 
     /**
@@ -184,6 +232,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             case R.id.actionDetect:
                 mIsDetecting = true;
                 return true;
+            case R.id.actionRecognize:
+                if(isFilterLoaded){
+                    mIsRecognizing = true;
+                } else {
+                    Toast.makeText(MainActivity.this, "Filters are loading. Please wait", Toast.LENGTH_SHORT).show();
+                }
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -209,5 +264,19 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public void onPhotosSavedToTemporaryDirEvent(PhotosSavedToTemporaryDirEvent onPhotosSavedToTemporaryDirEvent){
         Intent intent = new Intent(this, PhotoLabActivity.class);
         startActivity(intent);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onFaceRecognizedEvent(FaceRecognizedEvent faceRecognizedEvent) {
+        boolean isRecognized = faceRecognizedEvent.isRecognized();
+        if(isRecognized){
+            Toast.makeText(this, "Recognized " + faceRecognizedEvent.getTag() + " " + faceRecognizedEvent.getImageAddr(), Toast.LENGTH_SHORT).show();
+            mIsRecognizing = false;
+            return;
+        } else {
+            Toast.makeText(this, "Not recognized", Toast.LENGTH_SHORT).show();
+            mIsRecognizing = false;
+            return;
+        }
     }
 }

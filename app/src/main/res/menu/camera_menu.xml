@@ -6,4 +6,9 @@
         android:orderInCategory="100"
         app:showAsAction="ifRoom|withText"
         android:title="@string/action_start_detecting"/>
+    <item
+        android:id="@+id/actionRecognize"
+        android:orderInCategory="100"
+        app:showAsAction="ifRoom|withText"
+        android:title="@string/action_recognize"/>
 </menu>

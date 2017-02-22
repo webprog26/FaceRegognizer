@@ -181,7 +181,7 @@ public class PhotoLabActivity extends AppCompatActivity {
         }
 
         if(mBitmapFaceModelHashMap.size() > 0){
-            BitmapManager.savePhotoToGallery(getContentResolver(), getResources().getString(R.string.app_name), mBitmapFaceModelHashMap);
+            BitmapManager.savePhotoToGallery(getContentResolver(), getResources().getString(R.string.app_name), mBitmapFaceModelHashMap, mDbProvider);
         }
 //        for(Bitmap selectedBitmap: bitmaps){
 //            BitmapManager.savePhotoToGallery(getContentResolver(), getResources().getString(R.string.app_name), selectedBitmap);

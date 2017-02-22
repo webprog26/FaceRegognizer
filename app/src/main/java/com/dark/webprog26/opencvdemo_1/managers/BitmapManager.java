@@ -9,6 +9,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 
 import com.dark.webprog26.opencvdemo_1.models.FaceModel;
+import com.dark.webprog26.opencvdemo_1.providers.DbProvider;
 
 import org.opencv.android.Utils;
 import org.opencv.core.CvException;
@@ -87,7 +88,7 @@ public class BitmapManager {
      * @param pathToBitmap {@link String}
      * @return
      */
-    private static Bitmap getBitmap(String pathToBitmap){
+    public static Bitmap getBitmap(String pathToBitmap){
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         return BitmapFactory.decodeFile(pathToBitmap, options);
@@ -156,16 +157,25 @@ public class BitmapManager {
     }
 
 
-    public static void savePhotoToGallery(ContentResolver contentResolver, final String folderName, final HashMap<Bitmap, FaceModel> bitmapFaceModelHashMap) {
+    public static void savePhotoToGallery(ContentResolver contentResolver, final String folderName,
+                                          final HashMap<Bitmap, FaceModel> bitmapFaceModelHashMap,
+                                          DbProvider dbProvider) {
         final long currentTimeMillis = System.currentTimeMillis();
         final String galleryPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString();
         final String albumPath = galleryPath + "/" + folderName;
 
+        List<FaceModel> faceModels  = new ArrayList<>();
+
         for(Bitmap bitmap: bitmapFaceModelHashMap.keySet()){
-            final String photoName = bitmapFaceModelHashMap.get(bitmap).getDescription() + ".jpg";
+            final String photoName = bitmapFaceModelHashMap.get(bitmap).getDescription() + "_" + System.currentTimeMillis() + ".jpg";
             final String photoPath = albumPath + "/" +
                     photoName;
 
+            FaceModel.Builder builder = FaceModel.newBuilder();
+            builder.setDescription(bitmapFaceModelHashMap.get(bitmap).getDescription());
+            builder.setImageAddr(photoPath);
+
+            faceModels.add(builder.build());
 
             final ContentValues values = new ContentValues();
             values.put(MediaStore.MediaColumns.DATA, photoPath);
@@ -203,6 +213,13 @@ public class BitmapManager {
                 photo.delete();
                 return;
             }
+            insertFaceModelsToDb(faceModels, dbProvider);
+        }
+    }
+
+    private static void insertFaceModelsToDb(final List<FaceModel> faceModels, final DbProvider dbProvider){
+        for(FaceModel faceModel: faceModels){
+            dbProvider.insertFaceModel(faceModel);
         }
     }
 }
