@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     private boolean mIsRecognizing;
 
 
-    private List<Filter> mFilters = new ArrayList<>();
+    private List<Filter> mFilters;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -164,6 +164,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         OpenCVLoader.initDebug();
         if(initializeOpenCVDependencies()){
             mCameraView.enableView();
+            mFilters = new ArrayList<>();
             EventBus.getDefault().post(new LoadFaceModelsEvent());
         }
     }
@@ -233,10 +234,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 mIsDetecting = true;
                 return true;
             case R.id.actionRecognize:
-                if(isFilterLoaded){
-                    mIsRecognizing = true;
+                if(mFilters.size() > 0){
+                    if(isFilterLoaded){
+                        mIsRecognizing = true;
+                    } else {
+                        Toast.makeText(MainActivity.this, "Filters are loading. Please wait", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
-                    Toast.makeText(MainActivity.this, "Filters are loading. Please wait", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "No saved models detected. Please detect and save them" +
+                            " before recognizing!", Toast.LENGTH_SHORT).show();
                 }
                 return true;
             default:
@@ -268,15 +274,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onFaceRecognizedEvent(FaceRecognizedEvent faceRecognizedEvent) {
-        boolean isRecognized = faceRecognizedEvent.isRecognized();
-        if(isRecognized){
-            Toast.makeText(this, "Recognized " + faceRecognizedEvent.getTag() + " " + faceRecognizedEvent.getImageAddr(), Toast.LENGTH_SHORT).show();
-            mIsRecognizing = false;
-            return;
-        } else {
-            Toast.makeText(this, "Not recognized", Toast.LENGTH_SHORT).show();
-            mIsRecognizing = false;
-            return;
+        if(faceRecognizedEvent.isRecognized()){
+            Intent recognizedIntent = new Intent(this, RecognizedActivity.class);
+            recognizedIntent.putExtra(RecognizedActivity.DETECTED_IMAGE_ADDR, faceRecognizedEvent.getImageAddr());
+            recognizedIntent.putExtra(RecognizedActivity.DETECTED_OBJECT_TAG, faceRecognizedEvent.getTag());
+            startActivity(recognizedIntent);
         }
     }
 }

@@ -1,8 +1,10 @@
 package com.dark.webprog26.opencvdemo_1;
 
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -12,6 +14,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.GridView;
 import com.dark.webprog26.opencvdemo_1.adapters.LabGridViewAdapter;
@@ -37,11 +41,15 @@ import static com.dark.webprog26.opencvdemo_1.managers.BitmapManager.SAVED_IMAGE
 public class PhotoLabActivity extends AppCompatActivity {
 
     private static final String TAG = "PhotoLabActivity_TAG";
+
+    private static final String IS_WARNING_DIALOG_ON = "is_warning_dialog_on";
+
     private GridView mGridView;
     private List<Bitmap> mCorrectFaces = new ArrayList<>();
     private FaceModel.Builder mBuilder = FaceModel.newBuilder();
     private HashMap<Bitmap, FaceModel> mBitmapFaceModelHashMap = new HashMap<>();
     private DbProvider mDbProvider;
+    private SharedPreferences mSharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +57,10 @@ public class PhotoLabActivity extends AppCompatActivity {
         setContentView(R.layout.activity_photo_lab);
         mGridView = (GridView) findViewById(R.id.gridView);
         mDbProvider = new DbProvider(this);
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if(!mSharedPreferences.getBoolean(IS_WARNING_DIALOG_ON, false)){
+            showMessageWithWarning();
+        }
     }
 
     @Override
@@ -183,9 +195,6 @@ public class PhotoLabActivity extends AppCompatActivity {
         if(mBitmapFaceModelHashMap.size() > 0){
             BitmapManager.savePhotoToGallery(getContentResolver(), getResources().getString(R.string.app_name), mBitmapFaceModelHashMap, mDbProvider);
         }
-//        for(Bitmap selectedBitmap: bitmaps){
-//            BitmapManager.savePhotoToGallery(getContentResolver(), getResources().getString(R.string.app_name), selectedBitmap);
-//        }
         EventBus.getDefault().post(new DeleteUnselectedPhotosEvent());
     }
 
@@ -219,7 +228,8 @@ public class PhotoLabActivity extends AppCompatActivity {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if(keyCode == KeyEvent.KEYCODE_BACK){
-            if(mCorrectFaces.size() == 0){
+//            if(mCorrectFaces.size() == 0){
+              if(mBitmapFaceModelHashMap.size() == 0){
                 AlertDialog.Builder builder = new AlertDialog.Builder(this)
                 .setTitle(getResources().getString(R.string.warning))
                 .setMessage(getResources().getString(R.string.no_photos_selected))
@@ -241,5 +251,28 @@ public class PhotoLabActivity extends AppCompatActivity {
             }
         }
         return false;
+    }
+
+    private void showMessageWithWarning(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        final View dialogView = getLayoutInflater().inflate(R.layout.photos_num_warning_dialog, null);
+        builder.setTitle(getString(R.string.warning))
+                .setView(dialogView)
+                .setCancelable(true)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+        CheckBox chbDontShow = (CheckBox) dialogView.findViewById(R.id.chbDontShow);
+        chbDontShow.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                SharedPreferences.Editor editor = mSharedPreferences.edit();
+                editor.putBoolean(IS_WARNING_DIALOG_ON, isChecked).apply();
+            }
+        });
+        builder.show();
     }
 }

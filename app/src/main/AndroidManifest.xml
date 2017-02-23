@@ -34,8 +34,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".PhotoLabActivity"
-            android:configChanges="screenSize|orientation"></activity>
+        <activity
+            android:name=".PhotoLabActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".RecognizedActivity"
+            android:screenOrientation="landscape"
+            android:launchMode="singleInstance"></activity>
     </application>
 
 </manifest>
