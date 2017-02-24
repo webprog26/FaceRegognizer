@@ -9,7 +9,7 @@ import java.util.List;
  */
 
 public class TemporaryBitmapsLoadedEvent {
-    //when LabActivity is in resume state photos from temporary directory should be visible to the user
+    //When LabActivity is in resume state photos from temporary directory should be visible to the user
     private final List<Bitmap> bitmaps;
 
     public TemporaryBitmapsLoadedEvent(List<Bitmap> bitmaps) {

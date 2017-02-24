@@ -5,7 +5,7 @@ package com.dark.webprog26.opencvdemo_1.events;
  */
 
 public class TemporaryBitmapsRequestEvent {
-    //when LabActivity started we making request for the detected faces previously saved in temporary directory
+    //When LabActivity started we making request for the detected faces previously saved in temporary directory
     public TemporaryBitmapsRequestEvent() {
     }
 }

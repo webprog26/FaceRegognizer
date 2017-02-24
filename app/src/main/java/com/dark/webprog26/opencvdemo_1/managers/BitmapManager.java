@@ -217,6 +217,11 @@ public class BitmapManager {
         }
     }
 
+    /**
+     * Inserts {@link FaceModel} instances to db
+     * @param faceModels {@link List}
+     * @param dbProvider {@link DbProvider}
+     */
     private static void insertFaceModelsToDb(final List<FaceModel> faceModels, final DbProvider dbProvider){
         for(FaceModel faceModel: faceModels){
             dbProvider.insertFaceModel(faceModel);

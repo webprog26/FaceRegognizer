@@ -8,13 +8,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-
 import com.dark.webprog26.opencvdemo_1.R;
 import com.dark.webprog26.opencvdemo_1.views.FaceView;
-
 import java.lang.ref.WeakReference;
 import java.util.List;
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 /**
  * Created by webpr on 16.02.2017.
@@ -43,7 +42,7 @@ public class LabGridViewAdapter extends ArrayAdapter {
         if(view == null){
             LayoutInflater layoutInflater = ((Activity)mContextWeakReference.get()).getLayoutInflater();
             view = layoutInflater.inflate(mLayoutResId, parent, false);
-            viewHolder = new ViewHolder();
+            viewHolder = new ViewHolder(view);
             viewHolder.mImage = (FaceView) view.findViewById(R.id.image);
             view.setTag(viewHolder);
         } else {
@@ -55,6 +54,11 @@ public class LabGridViewAdapter extends ArrayAdapter {
     }
 
     static class ViewHolder{
+        @BindView(R.id.image)
         FaceView mImage;
+
+        public ViewHolder(View view) {
+            ButterKnife.bind(this, view);
+        }
     }
 }

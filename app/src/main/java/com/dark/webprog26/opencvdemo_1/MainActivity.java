@@ -8,11 +8,11 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
-
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ProgressBar;
 import android.widget.Toast;
-
 import com.dark.webprog26.opencvdemo_1.ar.Filter;
 import com.dark.webprog26.opencvdemo_1.ar.ImageDetectionFilter;
 import com.dark.webprog26.opencvdemo_1.events.FaceModelsLoadedEvent;
@@ -23,14 +23,11 @@ import com.dark.webprog26.opencvdemo_1.events.PhotosSavedToTemporaryDirEvent;
 import com.dark.webprog26.opencvdemo_1.managers.BitmapManager;
 import com.dark.webprog26.opencvdemo_1.models.FaceModel;
 import com.dark.webprog26.opencvdemo_1.providers.DbProvider;
-
-
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.OpenCVLoader;
-
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
@@ -39,29 +36,32 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener{
 
     private static final String TAG = "MainActivity_TAG";
     private static final int NUMBER_OF_PHOTOS_TO_SAVE = 100;
 
-    private CameraBridgeViewBase mCameraView;
     private CascadeClassifier cascadeClassifier;
     private Mat grayscaleImage;
     private int absoluteFaceSize;
     private boolean mIsDetecting;
     private boolean isFilterLoaded = false;
     private boolean mIsRecognizing;
-
-
     private List<Filter> mFilters;
+
+    @BindView(R.id.jCvCamera)
+    CameraBridgeViewBase mCameraView;
+    @BindView(R.id.pbLoading)
+    ProgressBar mPbLoading;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
-        mCameraView = (CameraBridgeViewBase) findViewById(R.id.jCvCamera);
+        ButterKnife.bind(this);
         mCameraView.setVisibility(SurfaceView.VISIBLE);
         mCameraView.setCvCameraViewListener(this);
     }
@@ -93,6 +93,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     @Override
     public Mat onCameraFrame(Mat inputFrame) {
         if(mIsDetecting){
+            //start detect face via device camera
             if(mIsRecognizing){
                 mIsRecognizing = false;
             }
@@ -103,10 +104,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             MatOfRect faces = new MatOfRect();
 
             if(cascadeClassifier != null){
-                cascadeClassifier.detectMultiScale(grayscaleImage, faces, 1.1, 2, 2, new Size(absoluteFaceSize, absoluteFaceSize), new Size());
+                cascadeClassifier.detectMultiScale(grayscaleImage,
+                                                    faces,
+                                                    1.1, 2, 2,
+                                                    new Size(absoluteFaceSize, absoluteFaceSize),
+                                                    new Size());
             }
 
-            // If there are any faces found, onDetected a rectangle around it
             int counter = 0;
             Rect[] facesArray = faces.toArray();
             Rect rectCrop = null;
@@ -114,23 +118,36 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 if(counter == NUMBER_OF_PHOTOS_TO_SAVE){
                     break;
                 }
+                //cropping the face from an image
                 Imgproc.rectangle(inputFrame, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0, 255), 3);
                 rectCrop = new Rect(facesArray[i].x + 3, facesArray[i].y + 3, facesArray[i].width - 6, facesArray[i].height - 6);
                 Mat mat = inputFrame.submat(rectCrop);
+                //add it to the list
                 mats.add(mat);
                 counter++;
             }
 
             if(mats.size() > 0){
+                //saving detected images to temporary directory in background thread
                 EventBus.getDefault().post(new FacesDetectedEvent(mats));
             }
         }
 
         if(mIsRecognizing){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if(mPbLoading.getVisibility() == View.GONE){
+                        mPbLoading.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
+
             if(mIsDetecting){
                 mIsDetecting = false;
             }
             mIsRecognizing = false;
+            //trying to recognize persons via preloaded filters
             for(Filter filter: mFilters){
                 filter.apply(inputFrame, inputFrame);
             }
@@ -165,16 +182,25 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         if(initializeOpenCVDependencies()){
             mCameraView.enableView();
             mFilters = new ArrayList<>();
+            //load FaceModel instances from db in background thread
             EventBus.getDefault().post(new LoadFaceModelsEvent());
         }
     }
 
+    /**
+     * Loads FaceModel instances from db in background thread
+     * @param loadFaceModelsEvent {@link LoadFaceModelsEvent}
+     */
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void onLoadFaceModelsEvent(LoadFaceModelsEvent loadFaceModelsEvent){
         EventBus.getDefault().post(new FaceModelsLoadedEvent(new DbProvider(this).getFaceModels()));
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
+    /**
+     * Forms filter for recognizing persons
+     * @param faceModelsLoadedEvent {@link FaceModelsLoadedEvent}
+     */
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onFaceModelsLoadedEvent(FaceModelsLoadedEvent faceModelsLoadedEvent){
         Log.i(TAG, "Loaded in background " + faceModelsLoadedEvent.getFaceModels().size() + " face models");
         for(FaceModel faceModel: faceModelsLoadedEvent.getFaceModels()){
@@ -238,11 +264,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                     if(isFilterLoaded){
                         mIsRecognizing = true;
                     } else {
-                        Toast.makeText(MainActivity.this, "Filters are loading. Please wait", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, getString(R.string.filters_loading_message), Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    Toast.makeText(MainActivity.this, "No saved models detected. Please detect and save them" +
-                            " before recognizing!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, getString(R.string.no_saved_models_detected_message), Toast.LENGTH_SHORT).show();
                 }
                 return true;
             default:
@@ -264,7 +289,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     /**
      * Starts LabActivity, where detected faces will be visible to the user, so he will have possibility to choose correct ones
-     * @param onPhotosSavedToTemporaryDirEvent
+     * @param onPhotosSavedToTemporaryDirEvent {@link PhotosSavedToTemporaryDirEvent}
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onPhotosSavedToTemporaryDirEvent(PhotosSavedToTemporaryDirEvent onPhotosSavedToTemporaryDirEvent){
@@ -272,13 +297,21 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         startActivity(intent);
     }
 
+    /**
+     * If persons has been recognized starts RecognizedActivity
+     * @param faceRecognizedEvent {@link FaceRecognizedEvent}
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onFaceRecognizedEvent(FaceRecognizedEvent faceRecognizedEvent) {
+        if(mPbLoading.getVisibility() == View.VISIBLE){
+            mPbLoading.setVisibility(View.GONE);
+        }
         if(faceRecognizedEvent.isRecognized()){
             Intent recognizedIntent = new Intent(this, RecognizedActivity.class);
             recognizedIntent.putExtra(RecognizedActivity.DETECTED_IMAGE_ADDR, faceRecognizedEvent.getImageAddr());
             recognizedIntent.putExtra(RecognizedActivity.DETECTED_OBJECT_TAG, faceRecognizedEvent.getTag());
             startActivity(recognizedIntent);
+            return;
         }
     }
 }

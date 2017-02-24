@@ -9,7 +9,7 @@ import java.util.List;
  */
 
 public class FaceModelsLoadedEvent {
-
+    //When faces detected earlier and stored on sd card are we form filters for recognizing
     private final List<FaceModel> faceModels;
 
     public FaceModelsLoadedEvent(List<FaceModel> faceModels) {

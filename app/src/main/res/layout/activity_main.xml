@@ -6,6 +6,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.dark.webprog26.opencvdemo_1.MainActivity">
+    <ProgressBar
+        android:id="@+id/pbLoading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminate="false"
+        android:layout_centerInParent="true"
+        android:visibility="gone"/>
     <org.opencv.android.JavaCameraView
         android:id="@+id/jCvCamera"
         android:layout_width="match_parent"

@@ -6,6 +6,8 @@ package com.dark.webprog26.opencvdemo_1.models;
 
 public class FaceModel {
 
+    //POJO class (^_^)
+
     private long mId;
     private String mDescription;
     private String mImageAddr;

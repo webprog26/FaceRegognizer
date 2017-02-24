@@ -7,5 +7,10 @@ import org.opencv.core.Mat;
  */
 
 public interface Filter {
+    /**
+     * Applies changes to Mat image
+     * @param src {@link Mat}
+     * @param dst {@link Mat}
+     */
     public abstract void apply(final Mat src, final Mat dst);
 }

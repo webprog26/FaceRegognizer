@@ -2,6 +2,8 @@ package com.dark.webprog26.opencvdemo_1.ar;
 
 /**
  * Created by webpr on 21.02.2017.
+ * Most of the code of this class taken from the original book "Android Application Programming with OpenCV 3"
+ * by Joseph Howse
  */
 
 import org.greenrobot.eventbus.EventBus;
@@ -31,7 +33,6 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import com.dark.webprog26.opencvdemo_1.events.FaceRecognizedEvent;
-
 
 public final class ImageDetectionFilter implements Filter {
 
@@ -84,8 +85,6 @@ public final class ImageDetectionFilter implements Filter {
             DescriptorMatcher.create(
                     DescriptorMatcher.BRUTEFORCE_HAMMINGLUT);
 
-    // The color of the outline drawn around the detected image.
-    private final Scalar mLineColor = new Scalar(0, 255, 0);
 
     public ImageDetectionFilter(final String imageAddr,
                                 final Bitmap bitmap, final String tag) throws IOException {

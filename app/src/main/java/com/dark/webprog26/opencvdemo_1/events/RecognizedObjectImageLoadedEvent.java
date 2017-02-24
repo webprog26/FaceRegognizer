@@ -7,7 +7,7 @@ import android.graphics.Bitmap;
  */
 
 public class RecognizedObjectImageLoadedEvent {
-
+    //When image has been loaded in background thread it should be visible to the user
     private final Bitmap mRecognizedObjectBitmap;
 
     public RecognizedObjectImageLoadedEvent(Bitmap mRecognizedObjectBitmap) {

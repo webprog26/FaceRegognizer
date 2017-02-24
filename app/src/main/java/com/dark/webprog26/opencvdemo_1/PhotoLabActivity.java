@@ -18,6 +18,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.GridView;
+import android.widget.ProgressBar;
 import com.dark.webprog26.opencvdemo_1.adapters.LabGridViewAdapter;
 import com.dark.webprog26.opencvdemo_1.events.DeleteUnselectedPhotosEvent;
 import com.dark.webprog26.opencvdemo_1.events.SelectedPhotosSaveEvent;
@@ -27,7 +28,6 @@ import com.dark.webprog26.opencvdemo_1.managers.BitmapManager;
 import com.dark.webprog26.opencvdemo_1.models.FaceModel;
 import com.dark.webprog26.opencvdemo_1.providers.DbProvider;
 import com.dark.webprog26.opencvdemo_1.views.FaceView;
-
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -35,8 +35,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import static com.dark.webprog26.opencvdemo_1.managers.BitmapManager.SAVED_IMAGES_TEMP_DIR;
+
 
 public class PhotoLabActivity extends AppCompatActivity {
 
@@ -44,21 +46,26 @@ public class PhotoLabActivity extends AppCompatActivity {
 
     private static final String IS_WARNING_DIALOG_ON = "is_warning_dialog_on";
 
-    private GridView mGridView;
     private List<Bitmap> mCorrectFaces = new ArrayList<>();
     private FaceModel.Builder mBuilder = FaceModel.newBuilder();
     private HashMap<Bitmap, FaceModel> mBitmapFaceModelHashMap = new HashMap<>();
     private DbProvider mDbProvider;
     private SharedPreferences mSharedPreferences;
 
+    @BindView(R.id.gridView)
+    GridView mGridView;
+    @BindView(R.id.pbPhotoSaving)
+    ProgressBar mPbPhotoSaving;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo_lab);
-        mGridView = (GridView) findViewById(R.id.gridView);
+        ButterKnife.bind(this);
         mDbProvider = new DbProvider(this);
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         if(!mSharedPreferences.getBoolean(IS_WARNING_DIALOG_ON, false)){
+            //if warning dialog wasn't cancelled, then show it to the user
             showMessageWithWarning();
         }
     }
@@ -84,7 +91,7 @@ public class PhotoLabActivity extends AppCompatActivity {
 
     /**
      * Makes request to uploaded Bitmaps with detected faces from the temporary folder
-     * @param temporaryBitmapsRequestEvent
+     * @param temporaryBitmapsRequestEvent {@link TemporaryBitmapsRequestEvent}
      */
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void onTemporaryBitmapsRequestEvent(TemporaryBitmapsRequestEvent temporaryBitmapsRequestEvent){
@@ -143,6 +150,7 @@ public class PhotoLabActivity extends AppCompatActivity {
                                 if(faceModel.getDescription() != null){
                                     Log.i(TAG, "faceModel.getDescription() " + faceModel.getDescription());
                                     mBitmapFaceModelHashMap.put(faceBitmap, faceModel);
+                                    invalidateOptionsMenu();
                                 }
                                 Log.i(TAG, "map: " + mBitmapFaceModelHashMap.toString() + ", size: " + mBitmapFaceModelHashMap.size());
                                 dialog.dismiss();
@@ -158,6 +166,7 @@ public class PhotoLabActivity extends AppCompatActivity {
                 ((FaceView) view).drawMarker(faceBitmap, true);
                 mCorrectFaces.remove(faceBitmap);
                 mBitmapFaceModelHashMap.remove(faceBitmap);
+                invalidateOptionsMenu();
             }
         }
     }
@@ -172,6 +181,9 @@ public class PhotoLabActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()){
             case R.id.actionSave:
+                if(mPbPhotoSaving.getVisibility() == View.GONE){
+                    mPbPhotoSaving.setVisibility(View.VISIBLE);
+                }
                 EventBus.getDefault().post(new SelectedPhotosSaveEvent(mCorrectFaces));
                 return true;
             default:
@@ -201,7 +213,7 @@ public class PhotoLabActivity extends AppCompatActivity {
 
     /**
      * Delete selected photos from temporary folder to save device physical memory space
-     * @param deleteUnselectedPhotosEvent
+     * @param deleteUnselectedPhotosEvent {@link DeleteUnselectedPhotosEvent}
      */
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void onDeleteUnselectedPhotosEvent(DeleteUnselectedPhotosEvent deleteUnselectedPhotosEvent){
@@ -221,14 +233,27 @@ public class PhotoLabActivity extends AppCompatActivity {
                 }
              }
          }
-         finish();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(mPbPhotoSaving.getVisibility() == View.VISIBLE){
+                    mPbPhotoSaving.setVisibility(View.GONE);
+                }
+            }
+        });
+        finish();
      }
 
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.getItem(0).setEnabled(mBitmapFaceModelHashMap.size() > 0);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if(keyCode == KeyEvent.KEYCODE_BACK){
-//            if(mCorrectFaces.size() == 0){
               if(mBitmapFaceModelHashMap.size() == 0){
                 AlertDialog.Builder builder = new AlertDialog.Builder(this)
                 .setTitle(getResources().getString(R.string.warning))
@@ -253,6 +278,9 @@ public class PhotoLabActivity extends AppCompatActivity {
         return false;
     }
 
+    /**
+     * Shows dialog with warning to the user that at least 5 photos needed for better recognizing performance
+     */
     private void showMessageWithWarning(){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final View dialogView = getLayoutInflater().inflate(R.layout.photos_num_warning_dialog, null);

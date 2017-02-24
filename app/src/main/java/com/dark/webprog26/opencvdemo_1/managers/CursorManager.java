@@ -11,6 +11,11 @@ import com.dark.webprog26.opencvdemo_1.models.FaceModel;
 
 public class CursorManager {
 
+    /**
+     * Gets {@link FaceModel} instance via predefined {@link Cursor}
+     * @param cursor {@link Cursor}
+     * @return {@link FaceModel}
+     */
     public static FaceModel getFaceModel(Cursor cursor){
         if(cursor == null){
             return null;

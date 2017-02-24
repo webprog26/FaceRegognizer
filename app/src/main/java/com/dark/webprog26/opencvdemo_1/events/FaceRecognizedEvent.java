@@ -5,6 +5,10 @@ package com.dark.webprog26.opencvdemo_1.events;
  */
 
 public class FaceRecognizedEvent {
+    //When user is trying to recognize a person, this event called.
+    //If person was recognized this.isRecognized = true & this.mTag contains tag loaded from db
+    // & this.mImageAddr contains image file address on sd card.
+    //Otherwise this.isRecognized = false & this.mTag = this.mImageAddr = null
 
     private final boolean isRecognized;
     private final String mTag;

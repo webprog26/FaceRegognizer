@@ -15,17 +15,28 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
-    public class RecognizedActivity extends AppCompatActivity {
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
+public class RecognizedActivity extends AppCompatActivity {
 
     private static final String TAG = "RecognizedActivity";
 
-    public static final String DETECTED_IMAGE_ADDR = "detected_image_addr";
-    public static final String DETECTED_OBJECT_TAG = "detected_object_tag";
+    public static final String DETECTED_IMAGE_ADDR = "com.dark.webprog26.opencvdemo_1.detected_image_addr";
+    public static final String DETECTED_OBJECT_TAG = "com.dark.webprog26.opencvdemo_1.detected_object_tag";
+
+    @BindView(R.id.ivRecognizedObjectImage)
+    ImageView mIvRecognizedObjectImage;
+    @BindView(R.id.tvDetectedObjectTag)
+    TextView mTvDetectedObjectTag;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recognized);
+        ButterKnife.bind(this);
     }
 
     @Override
@@ -43,21 +54,30 @@ import org.greenrobot.eventbus.ThreadMode;
         }
     }
 
+    /**
+     * Loads recognized person image from sd card in background thread
+     * @param loadRecognizedImageEvent {@link LoadRecognizedImageEvent}
+     */
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void onLoadRecognizedImageEvent(LoadRecognizedImageEvent loadRecognizedImageEvent){
-        EventBus.getDefault().post(new RecognizedObjectImageLoadedEvent(BitmapManager.getBitmap(loadRecognizedImageEvent.getImageAddr())));
+        EventBus.getDefault()
+                .post(new RecognizedObjectImageLoadedEvent(BitmapManager.getBitmap(loadRecognizedImageEvent.getImageAddr())));
     }
 
+    /**
+     * Sets recognized persons image to mIvRecognizedObjectImage and it's tag to mTvDetectedObjectTag
+     * @param recognizedObjectImageLoadedEvent {@link RecognizedObjectImageLoadedEvent}
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onRecognizedObjectImageLoadedEvent(RecognizedObjectImageLoadedEvent recognizedObjectImageLoadedEvent){
         final Bitmap recognizedObjectBitmap = recognizedObjectImageLoadedEvent.getRecognizedObjectBitmap();
         if(recognizedObjectBitmap != null){
-            ((ImageView) findViewById(R.id.ivRecognizedObjectImage)).setImageBitmap(recognizedObjectBitmap);
+            mIvRecognizedObjectImage.setImageBitmap(recognizedObjectBitmap);
         }
 
         final String objectTagString = getIntent().getStringExtra(DETECTED_OBJECT_TAG);
         if(objectTagString != null){
-            ((TextView) findViewById(R.id.tvDetectedObjectName)).setText(objectTagString);
+            mTvDetectedObjectTag.setText(objectTagString);
         }
     }
 

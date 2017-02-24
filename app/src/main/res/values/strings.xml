@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">OpenCvDemo_1</string>
+    <string name="app_name">FaceRecognizer</string>
     <string name="action_start_detecting">Start detecting</string>
     <string name="action_recognize">Recognize</string>
     <string name="action_save_selected">Save selected</string>
@@ -8,4 +8,6 @@
     <string name="person_description_tag">Type description tag</string>
     <string name="recommend_message">We highly recommend you to save at least five photos of person\'s face which you would like to recognize later.</string>
     <string name="recommend_message_checkbox_text">Don\'t show this message again</string>
+    <string name="filters_loading_message">Filters are loading. Please wait</string>
+    <string name="no_saved_models_detected_message">No saved models detected. Please detect and save them before recognizing!</string>
 </resources>

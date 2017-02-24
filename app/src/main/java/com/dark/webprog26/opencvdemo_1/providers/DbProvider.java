@@ -25,6 +25,10 @@ public class DbProvider {
         this.mDbHelper = new DbHelper(mContextWeakReference.get());
     }
 
+    /**
+     * Inserts {@link FaceModel} instance to db
+     * @param faceModel {@link FaceModel}
+     */
     public void insertFaceModel(FaceModel faceModel){
         ContentValues contentValues = new ContentValues();
         contentValues.put(DbHelper.FACE_MODEL_DESCRIPTION, faceModel.getDescription());
@@ -32,10 +36,20 @@ public class DbProvider {
         mDbHelper.getWritableDatabase().insert(DbHelper.FACE_MODELS_TABLE, null, contentValues);
     }
 
+    /**
+     * Gets {@link java.util.List} of {@link FaceModel} instances
+     * @return ArrayList
+     */
     public ArrayList<FaceModel> getFaceModels(){
         ArrayList<FaceModel> faceModels = new ArrayList<>();
 
-        Cursor cursor = mDbHelper.getReadableDatabase().query(DbHelper.FACE_MODELS_TABLE, null, null, null, null, null, DbHelper.ID);
+        Cursor cursor = mDbHelper.getReadableDatabase().query(DbHelper.FACE_MODELS_TABLE,
+                                                                null,
+                                                                null,
+                                                                null,
+                                                                null,
+                                                                null,
+                                                                DbHelper.ID);
         while(cursor.moveToNext()){
             faceModels.add(CursorManager.getFaceModel(cursor));
         }
